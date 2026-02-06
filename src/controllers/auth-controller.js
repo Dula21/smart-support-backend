@@ -3,8 +3,8 @@ const jwt = require('jsonwebtoken');
 const { getDB } = require('../config/db');
 const db = getDB();
 const crypto = require('crypto');
-
 const nodemailer = require('nodemailer');
+
 // Email transporter setup
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -81,9 +81,6 @@ exports.login = async (req, res) => {
     console.error('Error in login:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
-
-  
-
 };
 
 exports.getUsers = async (req, res) => {
