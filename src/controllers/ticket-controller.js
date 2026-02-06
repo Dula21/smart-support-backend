@@ -1,12 +1,9 @@
 const { ObjectId } = require('mongodb');
 const multer = require('multer');
-
 const { classifyTicket } = require('../utils/ticketClassifier');
 const { getDB } = require('../config/db');
 const db = getDB();
 const nodemailer = require('nodemailer');
-
-
 
 const upload = multer({
   dest: 'uploads/',
