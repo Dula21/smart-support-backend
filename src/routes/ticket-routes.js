@@ -1,7 +1,6 @@
 const express = require('express');
 const { getTickets, createTicket, updateTicket, deleteTicket,addComment } = require('../controllers/ticket-controller');
 const { authenticate } = require('../middleware/auth-middleware');
-
 const router = express.Router();
 
 router.get('/', authenticate, getTickets);
