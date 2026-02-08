@@ -6,16 +6,16 @@ const router = express.Router();
 // Get all tickets (admins) or user's tickets (users) - using controller
 router.get('/', authenticate, getTickets);
 
-// Submit ticket (users only) - using controller (integrate classification there)
-router.post('/', authenticate, authorize(['user']), createTicket);
+// Submit ticket (users and admins) - using controller
+router.post('/', authenticate, authorize(['user', 'admin']), createTicket);
 
 // Update ticket (e.g., status or details) - using controller
 router.put('/:id', authenticate, updateTicket);
 
 // Manual classify ticket (admins only) - using controller
-router.put('/:id/classify', authenticate, authorize(['admin']), updateTicket);  // Or create a separate classify function in controller
+router.put('/:id/classify', authenticate, authorize(['admin']), updateTicket);  // Updates category via body
 
-// Delete ticket (admins only?) - using controller
+// Delete ticket (admins only) - using controller
 router.delete('/:id', authenticate, authorize(['admin']), deleteTicket);
 
 // Add comment to ticket - using controller
