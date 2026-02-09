@@ -21,6 +21,7 @@
     "@dotenvx/dotenvx": "^1.52.0",
     "bcryptjs": "^3.0.3",
     "body-parser": "^2.2.2",
+    "bytez.js": "^3.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
