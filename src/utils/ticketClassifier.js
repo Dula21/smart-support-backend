@@ -1,39 +1,62 @@
-const OpenAI = require('openai');  // Updated import: No more Configuration
+const Bytez = require('bytez.js');
 require('dotenv').config();
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });  // Direct initialization
+// Initialize Bytez SDK
+const key = process.env.BYTEZ_API_KEY;  // Use env var for security
+const sdk = new Bytez(key);
+const model = sdk.model('BAAI/bge-reranker-v2-m3');
 
-// Simple keyword-based classifier (your original logic)
-function classifyTicket(description) {
+// Predefined categories as passages for reranking
+const categories = [
+  'Technical Issue',  // E.g., bugs, errors
+  'Account Issue',    // E.g., login, password
+  'Billing Issue',    // E.g., payments, invoices
+  'General Inquiry'   // Default/fallback
+];
+
+// Simple keyword-based classifier (fallback)
+function classifyWithKeywords(description) {
   const lowerDesc = description.toLowerCase();
   if (lowerDesc.includes('bug') || lowerDesc.includes('error')) return 'Technical Issue';
   if (lowerDesc.includes('account') || lowerDesc.includes('login')) return 'Account Issue';
   if (lowerDesc.includes('billing') || lowerDesc.includes('payment')) return 'Billing Issue';
-  
-  // If no keyword match, use AI for classification
-  return classifyWithAI(description);
+  return 'General Inquiry';
 }
 
-// AI-based classification function using chat completions
-async function classifyWithAI(description) {
+// Reranker-based classification
+async function classifyWithReranker(description) {
   try {
-    const response = await openai.chat.completions.create({  // Updated API call
-      model: 'gpt-3.5-turbo',  // Use chat model for better results
-      messages: [
-        { role: 'system', content: 'You are a helpful assistant that classifies support tickets.' },
-        { role: 'user', content: `Classify this support ticket into one of: Technical Issue, Account Issue, Billing Issue, General Inquiry. Provide only the category name. Ticket: "${description}"` }
-      ],
-      max_tokens: 20,
-      temperature: 0.3
+    // Run the model: description as query, categories as passages
+    const { error, output } = await model.run({
+      query: description,
+      passages: categories
     });
-    const aiCategory = response.choices[0].message.content.trim();
-    // Validate AI response against allowed categories
-    const validCategories = ['Technical Issue', 'Account Issue', 'Billing Issue', 'General Inquiry'];
-    return validCategories.includes(aiCategory) ? aiCategory : 'General Inquiry';
-  } catch (error) {
-    console.error('AI classification failed:', error.message);
-    return 'General Inquiry';  // Safe fallback
+
+    if (error) throw new Error(error);
+
+    // Output is an array of scores (one per category)
+    // Find the index of the highest score
+    const maxScoreIndex = output.scores.indexOf(Math.max(...output.scores));
+    const predictedCategory = categories[maxScoreIndex];
+
+    // Optional: Log scores for debugging
+    console.log('Reranker scores:', output.scores, 'Predicted:', predictedCategory);
+
+    return predictedCategory;
+  } catch (err) {
+    console.error('Reranker classification failed:', err.message);
+    return null;  // Fall back to keywords
   }
+}
+
+// Main classification function
+async function classifyTicket(description) {
+  // First, try reranker
+  const rerankerResult = await classifyWithReranker(description);
+  if (rerankerResult) return rerankerResult;
+
+  // Fallback to keywords if reranker fails
+  return classifyWithKeywords(description);
 }
 
 module.exports = { classifyTicket };
