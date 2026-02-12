@@ -8,7 +8,7 @@ async function connectDB() {
   try {
     await client.connect();
     console.log('Connected to MongoDB');
-    db = client.db('smart_support');
+    db = client.db('smart-support');
     return db;
   } catch (error) {
     console.error('MongoDB connection error:', error);
