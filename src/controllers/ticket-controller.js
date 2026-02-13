@@ -40,6 +40,26 @@ exports.getTickets = async (req, res) => {
   }
 };
 
+exports.getTicketById = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const tickets = db.collection('tickets');
+    const ticket = await tickets.findOne({ _id: new ObjectId(id) });
+
+    if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
+
+    // Only allow creator or admin
+    if (ticket.createdBy !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    res.json(ticket);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+};
+
 exports.createTicket = [
   upload.single('file'),
   async (req, res) => {
@@ -136,6 +156,21 @@ exports.addComment = async (req, res) => {
       { $push: { comments: { userId: req.user.id, comment, createdAt: new Date() } } }
     );
     res.json({ message: 'Comment added' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+exports.getComments = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const tickets = db.collection('tickets');
+    const ticket = await tickets.findOne({ _id: new ObjectId(id) });
+
+    if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
+
+    res.json(ticket.comments || []);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
   }
