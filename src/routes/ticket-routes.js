@@ -1,5 +1,5 @@
 const express = require('express');
-const { getTickets, createTicket, updateTicket, deleteTicket, addComment } = require('../controllers/ticket-controller');
+const { getTickets,getTicketById,getComments, createTicket, updateTicket, deleteTicket, addComment } = require('../controllers/ticket-controller');
 const { authenticate, authorize } = require('../middleware/auth-middleware');
 const router = express.Router();
 
@@ -18,7 +18,14 @@ router.put('/:id/classify', authenticate, authorize(['admin']), updateTicket);  
 // Delete ticket (admins only) - using controller
 router.delete('/:id', authenticate, authorize(['admin']), deleteTicket);
 
+//get tickets by id
+router.get('/:id', authenticate, getTicketById);
+//get comments by ID
+router.get('/:id/comments', authenticate, getComments);
+
 // Add comment to ticket - using controller
 router.post('/:id/comments', authenticate, addComment);
+
+
 
 module.exports = router;
