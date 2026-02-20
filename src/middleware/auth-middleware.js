@@ -11,7 +11,7 @@ const authenticate = (req, res, next) => {
     req.user = decoded;  // Attach user info (e.g., id, role) to req
     next();
   } catch (err) {
-    res.status(400).json({ error: 'Invalid token.' });
+    res.status(400).json({ error: 'Invalid token. Please logout and login' });
   }
 };
 
