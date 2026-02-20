@@ -14,21 +14,30 @@ const transporter = nodemailer.createTransport({
 
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
-  const users = db.collection('users');
-  const user = await users.findOne({ email });
-  if (!user) return res.status(404).json({ message: 'User not found' });
+  try {
+    const users = db.collection('users');
+    const user = await users.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-  const resetToken = crypto.randomBytes(32).toString('hex');
-  await users.updateOne({ _id: user._id }, { $set: { resetToken, resetTokenExpiry: Date.now() + 3600000 } });
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = Date.now() + 3600000;  // 1 hour
 
-  // Send email (comment out if email is disabled)
-  await transporter.sendMail({
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: 'Password Reset',
-    text: `Reset token: ${resetToken}`
-  });
-  res.json({ message: 'Reset email sent' });
+    await users.updateOne({ _id: user._id }, { $set: { resetToken, resetTokenExpiry } });
+
+    // Send email with clickable link
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Password Reset Request',
+      html: `<p>Click <a href="${resetLink}">here</a> to reset your password. This link expires in 1 hour.</p><p>If the link doesn't work, copy and paste this URL: ${resetLink}</p>`
+    });
+
+    res.json({ message: 'Reset email sent. Check your inbox for the link.' });
+  } catch (error) {
+    console.error('Error in forgotPassword:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
 };
 
 exports.resetPassword = async (req, res) => {
@@ -83,7 +92,7 @@ exports.login = async (req, res) => {
   }
 };
 
-exports.getUsers = async (req, res) => {
+exports.getusers = async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
   try {
     const users = db.collection('users');
