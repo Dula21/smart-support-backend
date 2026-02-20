@@ -3,6 +3,7 @@ const { getTickets,getTicketById,getComments, createTicket, updateTicket, delete
 const { authenticate, authorize } = require('../middleware/auth-middleware');
 const router = express.Router();
 
+
 // Get all tickets (admins) or user's tickets (users) - using controller
 router.get('/', authenticate, getTickets);
 
