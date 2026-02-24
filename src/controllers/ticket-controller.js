@@ -105,8 +105,9 @@ exports.createTicket = [
       const category = await classifyTicket(description);
       
       // Store filename only (with extension)
-      const attachment =  req.file.filename 
-      
+      // Replace your old attachment line with this:
+const attachment = req.file ? req.file.filename : null;
+
       const newTicket = {
         title,
         description,
