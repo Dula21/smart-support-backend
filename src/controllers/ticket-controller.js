@@ -34,16 +34,22 @@ const transporter = nodemailer.createTransport({
 
 exports.getTickets = async (req, res) => {
   const { status, priority, search } = req.query;
+  const { ObjectId } = require('mongodb');
 
   try {
     const tickets = db.collection('tickets');
+    const users = db.collection('users');
 
-    let query = { createdBy: req.user.id };
-    if (req.user.role === 'admin') query = {};
+    // NEW LOGIC: Admin sees only assigned tickets, User sees only created tickets
+    let query = {};
+    if (req.user.role === 'admin') {
+      query.assignedTo = req.user.id; 
+    } else {
+      query.createdBy = req.user.id;
+    }
 
     if (status) query.status = status;
     if (priority) query.priority = priority;
-
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: 'i' } },
@@ -52,43 +58,54 @@ exports.getTickets = async (req, res) => {
     }
 
     const userTickets = await tickets.find(query).toArray();
-    const users = db.collection('users');
 
     for (let ticket of userTickets) {
+      // Get Creator Info (Your existing logic)
       if (ticket.createdBy) {
-        const creator = await users.findOne({
-          _id: new ObjectId(ticket.createdBy)
-        });
-
-        ticket.creatorInfo = creator
-          ? { name: creator.name, email: creator.email }
-          : null;
+        const creator = await users.findOne({ _id: new ObjectId(ticket.createdBy) });
+        ticket.creatorInfo = creator ? { name: creator.name, email: creator.email } : null;
+      }
+      
+      // NEW: Get Assigned Admin Name
+      if (ticket.assignedTo) {
+        const admin = await users.findOne({ _id: new ObjectId(ticket.assignedTo) });
+        ticket.assignedAdminName = admin ? admin.name : 'Unknown Admin';
       }
     }
 
     res.json(userTickets);
   } catch (error) {
-    console.error('Detailed error:', error);
-    res.status(500).json({ message: 'Server error', error });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
+
 exports.getTicketById = async (req, res) => {
   const { id } = req.params;
+  const { ObjectId } = require('mongodb');
+  
   try {
     const tickets = db.collection('tickets');
+    const users = db.collection('users');
+    
     const ticket = await tickets.findOne({ _id: new ObjectId(id) });
     if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
 
-    const users = db.collection('users');
+    // Get Creator Info
     if (ticket.createdBy) {
       const creator = await users.findOne({ _id: new ObjectId(ticket.createdBy) });
       ticket.creatorInfo = creator ? { name: creator.name, email: creator.email } : null;
     }
 
+    // NEW: Get Assigned Admin Info
+    if (ticket.assignedTo) {
+      const admin = await users.findOne({ _id: new ObjectId(ticket.assignedTo) });
+      ticket.assignedAdminName = admin ? admin.name : 'Unassigned';
+    }
+
     res.json(ticket);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
