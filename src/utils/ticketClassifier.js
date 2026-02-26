@@ -1,61 +1,82 @@
 const Bytez = require('bytez.js');
 require('dotenv').config();
 
-// Initialize Bytez SDK
-const key = process.env.BYTEZ_API_KEY;  // Use env var for security
+const key = process.env.BYTEZ_API_KEY;
+
+if (!key) {
+  console.warn("⚠️  BYTEZ_API_KEY missing in .env. Keyword fallback active.");
+}
+
 const sdk = new Bytez(key);
 const model = sdk.model('BAAI/bge-reranker-v2-m3');
 
-// Predefined categories as passages for reranking
 const categories = [
-  'Technical Issue',  // E.g., bugs, errors
-  'Account Issue',    // E.g., login, password
-  'Billing Issue',    // E.g., payments, invoices
-  'General Inquiry'   // Default/fallback
+  'Technical Issue',
+  'Account Issue',
+  'Billing Issue',
+  'General Inquiry'
 ];
 
-// Simple keyword-based classifier (fallback)
 function classifyWithKeywords(description) {
   const lowerDesc = description.toLowerCase();
-  if (lowerDesc.includes('bug') || lowerDesc.includes('error')) return 'Technical Issue';
-  if (lowerDesc.includes('account') || lowerDesc.includes('login')) return 'Account Issue';
-  if (lowerDesc.includes('billing') || lowerDesc.includes('payment')) return 'Billing Issue';
+  if (lowerDesc.includes('bug') || lowerDesc.includes('error') || lowerDesc.includes('broken')) return 'Technical Issue';
+  if (lowerDesc.includes('account') || lowerDesc.includes('login') || lowerDesc.includes('password')) return 'Account Issue';
+  if (lowerDesc.includes('billing') || lowerDesc.includes('payment') || lowerDesc.includes('invoice')) return 'Billing Issue';
   return 'General Inquiry';
 }
 
-// Reranker-based classification
 async function classifyWithReranker(description) {
+  if (!key) return null;
+
   try {
-    // Run the model: description as query, categories as passages
-    const { error, output } = await model.run({
-      query: description,
-      passages: categories
-    });
+    const scores = [];
 
-    if (error) throw new Error(error);
+    // FIX: Use for...of to send requests ONE BY ONE to avoid Rate Limits
+    for (const category of categories) {
+      const res = await model.run({
+        text: description,
+        text_pair: category
+      });
 
-    // Output is an array of scores (one per category)
-    // Find the index of the highest score
-    const maxScoreIndex = output.scores.indexOf(Math.max(...output.scores));
+      if (res.error) {
+        // If a single request fails, log it and move to the next category
+        console.log(`Bytez Status for [${category}]:`, res.error);
+        scores.push(-Infinity);
+      } else {
+        // Correctly parse the score from the [Bytez API Response](https://bytez.com)
+        const score = res.output?.[0]?.score ?? res.output?.score ?? res.output ?? 0;
+        scores.push(score);
+      }
+      
+      // Optional: Tiny delay to ensure the [Bytez Server](https://bytez.com) is ready for the next call
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+
+    const maxScore = Math.max(...scores);
+    
+    // Fallback if all AI requests were blocked or failed
+    if (maxScore === -Infinity) return null;
+
+    const maxScoreIndex = scores.indexOf(maxScore);
     const predictedCategory = categories[maxScoreIndex];
-
-    // Optional: Log scores for debugging
-    console.log('Reranker scores:', output.scores, 'Predicted:', predictedCategory);
-
+    
+    console.log(`✨ AI Classified: [${predictedCategory}] (Top Score: ${maxScore.toFixed(4)})`);
     return predictedCategory;
+
   } catch (err) {
-    console.error('Reranker classification failed:', err.message);
-    return null;  // Fall back to keywords
+    console.error('Bytez AI API Error:', err.message);
+    return null;
   }
 }
 
-// Main classification function
 async function classifyTicket(description) {
-  // First, try reranker
   const rerankerResult = await classifyWithReranker(description);
-  if (rerankerResult) return rerankerResult;
+  
+  if (rerankerResult) {
+    return rerankerResult;
+  }
 
-  // Fallback to keywords if reranker fails
+  console.log('🔄 AI Processing unavailable, using Keyword Fallback...');
   return classifyWithKeywords(description);
 }
 
