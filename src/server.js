@@ -7,26 +7,30 @@ const { connectDB } = require('./config/db');
 require('dotenv').config();
 const path = require('path');
 
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// --- UPDATED CORS SECTION ---
+const allowedOrigin = process.env.ALLOWED_ORIGIN || 'http://localhost:3000';
 
+app.use(cors({
+  origin: allowedOrigin,
+  credentials: true, // Allows cookies/headers if needed
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+// ----------------------------
+
+app.use(express.json());
 
 // Serve static files from uploads directory
 app.use("/uploads", express.static(path.resolve("uploads")));
-
-
 
 // Connect to DB first, then load routes
 connectDB().then(() => {
   const authRoutes = require('./routes/auth-routes');
   const ticketRoutes = require('./routes/ticket-routes');
   const userRoutes = require('./routes/user-routes');
-
 
   app.use('/api/auth', authRoutes);
   app.use('/api/tickets', ticketRoutes);
