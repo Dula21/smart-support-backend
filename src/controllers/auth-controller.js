@@ -7,7 +7,9 @@ const nodemailer = require('nodemailer');
 
 // Email transporter setup
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  service: 'smtp.gmail.com',
+  port: 587, // Change from 465 to 587
+  secure: false,// Must be false for port 587
   auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
 });
 
