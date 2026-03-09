@@ -21,9 +21,9 @@ The system is built as a modular backend engine designed for high-concurrency cl
 
 ### Intelligent Ticket Lifecycle
 - **Automated Triage:** AI-powered classification logic (Keyword + LLM fallback) to route tickets instantly.
-- **Audit Trail:** Detailed communication logs for every interaction, ensuring full transparency.
-- **Asynchronous Notifications:** Automated status update emails triggered asynchronously to maintain system performance.
 - **Priority Management:** Customizable ticket priorities (High, Normal, Low) for optimized workflow.
+- **Audit Trail & Communication Logs:** Detailed logs for every interaction, ensuring full transparency between Users and Admins.
+- **Asynchronous Notifications:** Automated email updates triggered asynchronously via Nodemailer upon ticket status changes.
 
 ---
 
@@ -36,42 +36,34 @@ The system is built as a modular backend engine designed for high-concurrency cl
 - **DevOps:** Optimized for Vercel/Render with cloud-native configurations.
 
 ### Performance & Security
-- **Data Integrity:** Used MongoDB native driver for high-performance data operations.
-- **Scalability:** Modularized codebase utilizing separate service layers to support future **Microservices migration**.
-- **Optimization:** Implemented AI-based fallback only when keyword-based matching is inconclusive, significantly reducing API latency and costs.
+- **Data Integrity:** MongoDB native driver for high-performance operations.
+- **Scalability:** Modular service-layer architecture (User Service, Ticket Service, Notification Service) to support future **Microservices migration**.
+- **Optimization:** AI-based fallback only when keyword-based matching is inconclusive, reducing latency.
 
 ---
 
-## API Documentation (Example)
+## API Documentation (Selected Endpoints)
 
 **POST /api/tickets**
-* **Request Body:**
-    ```json
-    {
-      "title": "Login Error",
-      "description": "Unable to access account",
-      "priority": "High"
-    }
-    ```
-* **Response:**
-    ```json
-    {
-      "status": "success",
-      "ticketId": "65ab789...",
-      "category": "Authentication"
-    }
-    ```
+* **Request:** `{ "title": "...", "description": "...", "priority": "High" }`
+* **Response:** `{ "status": "success", "ticketId": "...", "category": "..." }`
+
+**GET /api/tickets/:id/logs**
+* **Purpose:** Retrieves the full audit trail and communication history for a specific ticket.
 
 ---
 
-## Installation & Setup
+## System Flow
+1. **Submission:** User submits ticket -> Backend processes via AI Classification.
+2. **Persistence:** Ticket stored in MongoDB with Audit Trail logs.
+3. **Admin Action:** Admin updates ticket status -> Backend triggers **Asynchronous Notification Service**.
+4. **Resolution:** User receives email notification and views status on Dashboard.
 
-1. **Install dependencies:**
-   `npm install`
+---
 
-2. **Configure environment (.env):**
-   ```text
-   PORT=3000
-   MONGO_URI=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret
-   AI_API_KEY=your_ai_api_key
+## Project Purpose
+This project demonstrates:
+- **Enterprise-grade API Design.**
+- **AI-Integrated Workflow Optimization.**
+- **Asynchronous Process Management.**
+- **Scalable System Architecture.**
