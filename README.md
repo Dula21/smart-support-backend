@@ -39,6 +39,10 @@ The architecture is modular and designed for integration with a frontend applica
 - Assigns tickets to predefined categories
 
 ---
+### Other Features
+- Progress update through email
+- Enable Attachment
+- Ticket Piority
 
 ## Tech Stack
 
