@@ -64,7 +64,6 @@ exports.register = async (req, res) => {
     const users = db.collection('users');
     const existingUser = await users.findOne({ email });
     if (existingUser) return res.status(400).json({ message: 'User already exists' });
-
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = { name, email, password: hashedPassword, role, createdAt: new Date() };
     const result = await users.insertOne(newUser);
